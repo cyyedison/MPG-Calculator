@@ -1,0 +1,15 @@
+# Local SDK path — machine-specific
+local.properties
+
+# Build outputs
+build/
+.gradle/
+app/build/
+
+# IDE files
+.idea/
+*.iml
+
+# Keystore files
+*.jks
+*.keystore

@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">MPG Calculator</string>
+    <string name="empty_state">No fill-ups yet.\nTap + to add your first record.</string>
+    <string name="add_record">Add fill-up record</string>
+    <string name="dialog_title">Add Fill-Up</string>
+    <string name="dialog_add">Add</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="hint_odometer">Odometer reading (miles)</string>
+    <string name="hint_fuel">Fuel added</string>
+    <string name="label_fuel_unit">Fuel unit</string>
+    <string name="unit_uk_gal">UK Gallons (default)</string>
+    <string name="unit_us_gal">US Gallons</string>
+    <string name="unit_litres">Litres</string>
+    <string name="error_fields_required">Please fill in all fields</string>
+    <string name="error_invalid_number">Please enter valid numbers</string>
+</resources>
