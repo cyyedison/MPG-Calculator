@@ -52,7 +52,6 @@
             android:id="@+id/rbUkGal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:checked="true"
             android:text="@string/unit_uk_gal" />
 
         <RadioButton
@@ -65,6 +64,7 @@
             android:id="@+id/rbLitres"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:checked="true"
             android:text="@string/unit_litres" />
 
     </RadioGroup>

@@ -2,15 +2,33 @@
     <string name="app_name">MPG Calculator</string>
     <string name="empty_state">No fill-ups yet.\nTap + to add your first record.</string>
     <string name="add_record">Add fill-up record</string>
+
+    <!-- Add dialog -->
     <string name="dialog_title">Add Fill-Up</string>
+    <string name="dialog_edit_title">Edit Fill-Up</string>
     <string name="dialog_add">Add</string>
+    <string name="dialog_save">Save</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="hint_odometer">Odometer reading (miles)</string>
     <string name="hint_fuel">Fuel added</string>
     <string name="label_fuel_unit">Fuel unit</string>
-    <string name="unit_uk_gal">UK Gallons (default)</string>
+    <string name="unit_uk_gal">UK Gallons</string>
     <string name="unit_us_gal">US Gallons</string>
     <string name="unit_litres">Litres</string>
     <string name="error_fields_required">Please fill in all fields</string>
     <string name="error_invalid_number">Please enter valid numbers</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_display_unit_label">Fuel consumption display unit</string>
+    <string name="unit_display_mpg_uk">MPG — UK gallon</string>
+    <string name="unit_display_mpg_us">MPG — US gallon</string>
+    <string name="unit_display_mpl">Miles per litre (mi/L)</string>
+    <string name="unit_display_kml">Kilometres per litre (km/L)</string>
+    <string name="unit_display_l100km">Litres per 100 km (L/100km)</string>
+
+    <!-- How to use -->
+    <string name="how_to_use_button">How to Use</string>
+    <string name="how_to_use_title">How to Use</string>
+    <string name="how_to_use_message">Always fill your tank to the MAXIMUM level before recording a fill-up.\n\n1. First fill-up: Enter your current odometer reading and the fuel you added. This is your starting point — no consumption is shown yet.\n\n2. Drive until your next fill-up.\n\n3. Fill to the MAX level again. Enter the new odometer reading and the exact amount of fuel added. The app calculates your consumption from the distance driven and fuel used.\n\nTip: For best accuracy, always fill to the same level each time.</string>
 </resources>

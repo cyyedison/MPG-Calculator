@@ -16,6 +16,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         dao.insert(record)
     }
 
+    fun update(record: FuelRecord) = viewModelScope.launch {
+        dao.update(record)
+    }
+
     fun delete(record: FuelRecord) = viewModelScope.launch {
         dao.delete(record)
     }
