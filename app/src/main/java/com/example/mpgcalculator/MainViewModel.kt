@@ -23,4 +23,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun delete(record: FuelRecord) = viewModelScope.launch {
         dao.delete(record)
     }
+
+    fun deleteAll() = viewModelScope.launch {
+        dao.deleteAll()
+    }
 }

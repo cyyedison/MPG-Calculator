@@ -48,11 +48,28 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.adapter = adapter
 
         viewModel.records.observe(this) { records ->
-            adapter.submitList(records)
+            // Use the commit callback to force a full rebind after DiffUtil settles.
+            // This is necessary because each card's MPG depends on its *neighbour's*
+            // odometer, so a single update affects both the updated card and the one
+            // immediately after it in the list.
+            adapter.submitList(records) {
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+            }
             binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
         }
 
+        adapter.onItemClick = { record -> showAddDialog(record) }
+
         binding.fab.setOnClickListener { showAddDialog() }
+
+        binding.fabDeleteAll.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.dialog_delete_all_title)
+                .setMessage(R.string.dialog_delete_all_msg)
+                .setPositiveButton(R.string.dialog_delete) { _, _ -> viewModel.deleteAll() }
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .show()
+        }
 
         setupSwipeActions()
     }
@@ -60,8 +77,13 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         val prefs = getSharedPreferences(SettingsActivity.PREFS_NAME, MODE_PRIVATE)
-        adapter.displayUnit = prefs.getString(SettingsActivity.KEY_DISPLAY_UNIT, SettingsActivity.DEFAULT_DISPLAY_UNIT)
-            ?: SettingsActivity.DEFAULT_DISPLAY_UNIT
+        adapter.displayUnit = prefs.getString(
+            SettingsActivity.KEY_DISPLAY_UNIT, SettingsActivity.DEFAULT_DISPLAY_UNIT
+        ) ?: SettingsActivity.DEFAULT_DISPLAY_UNIT
+        adapter.costPerLitre = prefs.getFloat(SettingsActivity.KEY_COST_PER_LITRE, 0f).toDouble()
+
+        val vehicleName = prefs.getString(SettingsActivity.KEY_VEHICLE_NAME, "") ?: ""
+        supportActionBar?.subtitle = vehicleName.ifEmpty { null }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -96,7 +118,18 @@ class MainActivity : AppCompatActivity() {
                 val pos = viewHolder.adapterPosition
                 val record = adapter.currentList[pos]
                 when (direction) {
-                    ItemTouchHelper.LEFT -> viewModel.delete(record)
+                    ItemTouchHelper.LEFT -> {
+                        // Restore item visually while awaiting confirmation
+                        adapter.notifyItemChanged(pos)
+                        MaterialAlertDialogBuilder(this@MainActivity)
+                            .setTitle(R.string.dialog_delete_confirm_title)
+                            .setMessage(R.string.dialog_delete_confirm_msg)
+                            .setPositiveButton(R.string.dialog_delete) { _, _ ->
+                                viewModel.delete(record)
+                            }
+                            .setNegativeButton(R.string.dialog_cancel, null)
+                            .show()
+                    }
                     ItemTouchHelper.RIGHT -> {
                         adapter.notifyItemChanged(pos)
                         showAddDialog(record)
@@ -144,12 +177,49 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAddDialog(existingRecord: FuelRecord? = null) {
         val dialogBinding = DialogAddRecordBinding.inflate(LayoutInflater.from(this))
+        val prefs = getSharedPreferences(SettingsActivity.PREFS_NAME, MODE_PRIVATE)
 
-        existingRecord?.let { record ->
-            dialogBinding.etOdometer.setText(record.odometerMiles.toString())
-            dialogBinding.etFuel.setText(record.fuelAmount.toString())
+        // Wire odometer unit toggle → update hint text
+        dialogBinding.rgOdometerUnit.setOnCheckedChangeListener { _, checkedId ->
+            dialogBinding.tilOdometer.hint = getString(
+                if (checkedId == R.id.rbKm) R.string.hint_odometer_km else R.string.hint_odometer_miles
+            )
+        }
+
+        if (existingRecord != null) {
+            // Editing — restore the exact unit and value the user originally typed
+            if (existingRecord.odometerUnit == "KM") {
+                dialogBinding.rgOdometerUnit.check(R.id.rbKm)
+                dialogBinding.tilOdometer.hint = getString(R.string.hint_odometer_km)
+                // miles × 1.60934 = km
+                dialogBinding.etOdometer.setText("%.1f".format(existingRecord.odometerMiles * 1.60934))
+            } else {
+                dialogBinding.etOdometer.setText("%.1f".format(existingRecord.odometerMiles))
+            }
+            dialogBinding.etFuel.setText(existingRecord.fuelAmount.toString())
             dialogBinding.rgUnit.check(
-                when (record.fuelUnit) {
+                when (existingRecord.fuelUnit) {
+                    "UK_GAL" -> R.id.rbUkGal
+                    "US_GAL" -> R.id.rbUsGal
+                    else     -> R.id.rbLitres
+                }
+            )
+            dialogBinding.cbMissedFillups.isChecked = existingRecord.isPartial
+        } else {
+            // New record — apply saved defaults
+            val defaultOdo = prefs.getString(
+                SettingsActivity.KEY_DEFAULT_ODOMETER_UNIT, SettingsActivity.DEFAULT_ODOMETER_UNIT
+            )
+            if (defaultOdo == "KM") {
+                dialogBinding.rgOdometerUnit.check(R.id.rbKm)
+                dialogBinding.tilOdometer.hint = getString(R.string.hint_odometer_km)
+            }
+
+            val defaultFuel = prefs.getString(
+                SettingsActivity.KEY_DEFAULT_FUEL_UNIT, SettingsActivity.DEFAULT_FUEL_UNIT
+            )
+            dialogBinding.rgUnit.check(
+                when (defaultFuel) {
                     "UK_GAL" -> R.id.rbUkGal
                     "US_GAL" -> R.id.rbUsGal
                     else     -> R.id.rbLitres
@@ -158,7 +228,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val isEdit = existingRecord != null
-        MaterialAlertDialogBuilder(this)
+        val builder = MaterialAlertDialogBuilder(this)
             .setTitle(if (isEdit) R.string.dialog_edit_title else R.string.dialog_title)
             .setView(dialogBinding.root)
             .setPositiveButton(if (isEdit) R.string.dialog_save else R.string.dialog_add) { _, _ ->
@@ -168,33 +238,56 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, R.string.error_fields_required, Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                val odometer = odoText.toDoubleOrNull()
+                val odoInput = odoText.toDoubleOrNull()
                 val fuel = fuelText.toDoubleOrNull()
-                if (odometer == null || fuel == null) {
+                if (odoInput == null || fuel == null) {
                     Toast.makeText(this, R.string.error_invalid_number, Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
+                val isKm = dialogBinding.rgOdometerUnit.checkedRadioButtonId == R.id.rbKm
+                // 1 mile = 1.60934 km  →  km ÷ 1.60934 = miles
+                val odometerMiles = if (isKm) odoInput / 1.60934 else odoInput
+                val odometerUnit = if (isKm) "KM" else "MILES"
                 val unit = when (dialogBinding.rgUnit.checkedRadioButtonId) {
-                    R.id.rbUsGal -> "US_GAL"
-                    R.id.rbLitres -> "LITRES"
-                    else -> "UK_GAL"
+                    R.id.rbUkGal  -> "UK_GAL"
+                    R.id.rbUsGal  -> "US_GAL"
+                    else          -> "LITRES"
                 }
+                val isPartial = dialogBinding.cbMissedFillups.isChecked
                 if (isEdit) {
                     viewModel.update(existingRecord!!.copy(
-                        odometerMiles = odometer,
+                        odometerMiles = odometerMiles,
+                        odometerUnit = odometerUnit,
                         fuelAmount = fuel,
-                        fuelUnit = unit
+                        fuelUnit = unit,
+                        isPartial = isPartial
                     ))
                 } else {
                     viewModel.insert(FuelRecord(
-                        odometerMiles = odometer,
+                        odometerMiles = odometerMiles,
+                        odometerUnit = odometerUnit,
                         fuelAmount = fuel,
                         fuelUnit = unit,
-                        timestampMs = System.currentTimeMillis()
+                        timestampMs = System.currentTimeMillis(),
+                        isPartial = isPartial
                     ))
                 }
             }
             .setNegativeButton(R.string.dialog_cancel, null)
-            .show()
+
+        if (isEdit) {
+            builder.setNeutralButton(R.string.dialog_delete) { _, _ ->
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.dialog_delete_confirm_title)
+                    .setMessage(R.string.dialog_delete_confirm_msg)
+                    .setPositiveButton(R.string.dialog_delete) { _, _ ->
+                        viewModel.delete(existingRecord!!)
+                    }
+                    .setNegativeButton(R.string.dialog_cancel, null)
+                    .show()
+            }
+        }
+
+        builder.show()
     }
 }

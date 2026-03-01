@@ -1,6 +1,7 @@
 package com.example.mpgcalculator
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -14,10 +15,12 @@ import java.util.Locale
 class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(DIFF) {
 
     var displayUnit: String = SettingsActivity.DEFAULT_DISPLAY_UNIT
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
+        set(value) { field = value; notifyDataSetChanged() }
+
+    var costPerLitre: Double = 0.0
+        set(value) { field = value; notifyDataSetChanged() }
+
+    var onItemClick: ((FuelRecord) -> Unit)? = null
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<FuelRecord>() {
@@ -56,23 +59,49 @@ class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(
 
         fun bind(record: FuelRecord, previousRecord: FuelRecord?) {
             binding.tvDateTime.text = DATE_FORMAT.format(Date(record.timestampMs))
-            binding.tvOdometer.text = "Odometer: %.1f mi".format(record.odometerMiles)
+            binding.tvOdometer.text = if (record.odometerUnit == "KM") {
+                // miles × 1.60934 = km
+                "Odometer: %.1f km".format(record.odometerMiles * 1.60934)
+            } else {
+                "Odometer: %.1f mi".format(record.odometerMiles)
+            }
             val unitLabel = when (record.fuelUnit) {
                 "US_GAL" -> "US gal"
                 "LITRES" -> "L"
                 else     -> "UK gal"
             }
             binding.tvFuel.text = "Fuel: %.2f $unitLabel".format(record.fuelAmount)
-            binding.tvMpg.text = if (previousRecord == null) {
-                "First fill-up"
-            } else {
-                computeConsumption(
-                    record.odometerMiles - previousRecord.odometerMiles,
-                    record.fuelAmount,
-                    record.fuelUnit,
-                    displayUnit
-                )
+
+            val tripMiles = if (previousRecord != null) {
+                record.odometerMiles - previousRecord.odometerMiles
+            } else 0.0
+
+            binding.tvMpg.text = when {
+                record.isPartial       -> "Missed fill-up(s) — no calculation"
+                previousRecord == null -> "First fill-up"
+                else -> computeConsumption(tripMiles, record.fuelAmount, record.fuelUnit, displayUnit)
             }
+
+            // Cost per mile / km
+            val showCost = costPerLitre > 0 && !record.isPartial &&
+                previousRecord != null && tripMiles > 0
+            if (showCost) {
+                val fuelLitres = when (record.fuelUnit) {
+                    "UK_GAL" -> record.fuelAmount * 4.54609
+                    "US_GAL" -> record.fuelAmount * 3.78541
+                    else     -> record.fuelAmount
+                }
+                val totalCost = fuelLitres * costPerLitre
+                val useKm = displayUnit == "KML" || displayUnit == "L100KM"
+                val costPerUnit = if (useKm) totalCost / (tripMiles * 1.60934) else totalCost / tripMiles
+                val label = if (useKm) "km" else "mi"
+                binding.tvCost.text = "Cost: %.3f / %s".format(costPerUnit, label)
+                binding.tvCost.visibility = View.VISIBLE
+            } else {
+                binding.tvCost.visibility = View.GONE
+            }
+
+            binding.root.setOnClickListener { onItemClick?.invoke(record) }
         }
     }
 

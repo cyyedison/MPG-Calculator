@@ -1,72 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="wrap_content">
 
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/hint_odometer"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etOdometer"
+        <!-- Odometer unit toggle -->
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal" />
+            android:layout_marginBottom="4dp"
+            android:text="@string/label_odometer_unit"
+            android:textAppearance="?attr/textAppearanceBody2" />
 
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="@string/hint_fuel"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etFuel"
+        <RadioGroup
+            android:id="@+id/rgOdometerUnit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
 
-    </com.google.android.material.textfield.TextInputLayout>
+            <RadioButton
+                android:id="@+id/rbMiles"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/unit_miles" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="4dp"
-        android:text="@string/label_fuel_unit"
-        android:textAppearance="?attr/textAppearanceBody2" />
+            <RadioButton
+                android:id="@+id/rbKm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:text="@string/unit_km" />
 
-    <RadioGroup
-        android:id="@+id/rgUnit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        </RadioGroup>
 
-        <RadioButton
-            android:id="@+id/rbUkGal"
-            android:layout_width="wrap_content"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilOdometer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/unit_uk_gal" />
+            android:hint="@string/hint_odometer_miles"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-        <RadioButton
-            android:id="@+id/rbUsGal"
-            android:layout_width="wrap_content"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etOdometer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/unit_us_gal" />
+            android:layout_marginTop="12dp"
+            android:hint="@string/hint_fuel"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-        <RadioButton
-            android:id="@+id/rbLitres"
-            android:layout_width="wrap_content"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFuel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Fuel unit — Litres first (default) -->
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="@string/unit_litres" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/label_fuel_unit"
+            android:textAppearance="?attr/textAppearanceBody2" />
 
-    </RadioGroup>
+        <RadioGroup
+            android:id="@+id/rgUnit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-</LinearLayout>
+            <RadioButton
+                android:id="@+id/rbLitres"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/unit_litres" />
+
+            <RadioButton
+                android:id="@+id/rbUkGal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/unit_uk_gal" />
+
+            <RadioButton
+                android:id="@+id/rbUsGal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/unit_us_gal" />
+
+        </RadioGroup>
+
+        <!-- Missed fill-ups flag -->
+        <CheckBox
+            android:id="@+id/cbMissedFillups"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/cb_missed_fillups" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:paddingStart="36dp"
+            android:text="@string/cb_missed_fillups_hint"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="?android:attr/textColorSecondary" />
+
+    </LinearLayout>
+
+</ScrollView>

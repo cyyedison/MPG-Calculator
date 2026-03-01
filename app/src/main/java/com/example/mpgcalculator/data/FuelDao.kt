@@ -20,4 +20,7 @@ interface FuelDao {
 
     @Delete
     suspend fun delete(record: FuelRecord)
+
+    @Query("DELETE FROM fuel_records")
+    suspend fun deleteAll()
 }
