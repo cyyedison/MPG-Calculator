@@ -20,6 +20,9 @@ class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(
     var costPerLitre: Double = 0.0
         set(value) { field = value; notifyDataSetChanged() }
 
+    var currencySymbol: String = "£"
+        set(value) { field = value; notifyDataSetChanged() }
+
     var onItemClick: ((FuelRecord) -> Unit)? = null
 
     companion object {
@@ -90,10 +93,9 @@ class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(
         fun bind(record: FuelRecord, previousRecord: FuelRecord?) {
             binding.tvDateTime.text = DATE_FORMAT.format(Date(record.timestampMs))
             binding.tvOdometer.text = if (record.odometerUnit == "KM") {
-                // miles × 1.60934 = km
-                "Odometer: %.1f km".format(record.odometerMiles * 1.60934)
+                "Odometer: %d km".format((record.odometerMiles * 1.60934).toInt())
             } else {
-                "Odometer: %.1f mi".format(record.odometerMiles)
+                "Odometer: %d mi".format(record.odometerMiles.toInt())
             }
             val unitLabel = when (record.fuelUnit) {
                 "US_GAL" -> "US gal"
@@ -105,6 +107,17 @@ class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(
             val tripMiles = if (previousRecord != null) {
                 record.odometerMiles - previousRecord.odometerMiles
             } else 0.0
+
+            // Trip distance
+            val useKm = displayUnit == "KML" || displayUnit == "L100KM"
+            if (previousRecord != null && !record.isPartial && tripMiles > 0) {
+                val tripDisplay = if (useKm) tripMiles * 1.60934 else tripMiles
+                val unit = if (useKm) "km" else "mi"
+                binding.tvTripDistance.text = "Trip: %d %s".format(tripDisplay.toInt(), unit)
+                binding.tvTripDistance.visibility = View.VISIBLE
+            } else {
+                binding.tvTripDistance.visibility = View.GONE
+            }
 
             binding.tvMpg.text = when {
                 record.isPartial       -> "Missed fill-up(s) — no calculation"
@@ -125,7 +138,8 @@ class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(
                 val useKm = displayUnit == "KML" || displayUnit == "L100KM"
                 val costPerUnit = if (useKm) totalCost / (tripMiles * 1.60934) else totalCost / tripMiles
                 val label = if (useKm) "km" else "mi"
-                binding.tvCost.text = "Cost: %.3f / %s".format(costPerUnit, label)
+                val prefix = if (currencySymbol.isEmpty()) "" else currencySymbol
+                binding.tvCost.text = "Cost: $prefix%.3f / %s".format(costPerUnit, label)
                 binding.tvCost.visibility = View.VISIBLE
             } else {
                 binding.tvCost.visibility = View.GONE

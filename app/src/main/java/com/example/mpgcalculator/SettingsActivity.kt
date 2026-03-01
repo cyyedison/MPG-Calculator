@@ -33,6 +33,7 @@ class SettingsActivity : AppCompatActivity() {
         setupDefaultOdometerUnit()
         setupDefaultFuelUnit()
         setupFuelCost()
+        setupCurrencySymbol()
         setupTheme()
 
         binding.btnHowToUse.setOnClickListener {
@@ -159,6 +160,29 @@ class SettingsActivity : AppCompatActivity() {
         else     -> 1.0
     }
 
+    // ── Currency symbol ───────────────────────────────────────────────────────
+
+    private fun setupCurrencySymbol() {
+        val current = prefs.getString(KEY_CURRENCY_SYMBOL, DEFAULT_CURRENCY_SYMBOL)
+        binding.rgCurrencySymbol.check(
+            when (current) {
+                "$" -> R.id.rbCurrencyUsd
+                "€" -> R.id.rbCurrencyEur
+                ""  -> R.id.rbCurrencyNone
+                else -> R.id.rbCurrencyGbp
+            }
+        )
+        binding.rgCurrencySymbol.setOnCheckedChangeListener { _, checkedId ->
+            val symbol = when (checkedId) {
+                R.id.rbCurrencyUsd  -> "$"
+                R.id.rbCurrencyEur  -> "€"
+                R.id.rbCurrencyNone -> ""
+                else                -> "£"
+            }
+            prefs.edit().putString(KEY_CURRENCY_SYMBOL, symbol).apply()
+        }
+    }
+
     // ── Theme ─────────────────────────────────────────────────────────────────
 
     private fun setupTheme() {
@@ -204,10 +228,12 @@ class SettingsActivity : AppCompatActivity() {
         const val KEY_DEFAULT_FUEL_UNIT     = "default_fuel_unit"
         const val KEY_VEHICLE_NAME          = "vehicle_name"
         const val KEY_COST_PER_LITRE        = "cost_per_litre"
+        const val KEY_CURRENCY_SYMBOL       = "currency_symbol"
         const val KEY_THEME                 = "theme"
 
         const val DEFAULT_DISPLAY_UNIT      = "MPG_UK"
         const val DEFAULT_ODOMETER_UNIT     = "MILES"
         const val DEFAULT_FUEL_UNIT         = "LITRES"
+        const val DEFAULT_CURRENCY_SYMBOL   = "£"
     }
 }

@@ -62,6 +62,16 @@
     <string name="cars_delete_confirm_msg">All fill-up records for this car will be permanently removed.</string>
     <string name="error_cannot_delete_only_car">You must have at least one car</string>
 
+    <!-- Currency symbol -->
+    <string name="settings_currency_label">Currency symbol</string>
+    <string name="currency_gbp">£</string>
+    <string name="currency_usd">$</string>
+    <string name="currency_eur">€</string>
+    <string name="currency_none">None</string>
+    <string name="warn_odometer_low_title">Odometer reading looks low</string>
+    <string name="warn_odometer_low_msg">The reading you entered (%s) is lower than the last recorded value (%s). Save anyway?</string>
+    <string name="warn_save_anyway">Save anyway</string>
+
     <!-- How to use -->
     <string name="how_to_use_button">How to Use</string>
     <string name="how_to_use_title">How to Use</string>

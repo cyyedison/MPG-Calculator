@@ -77,6 +77,12 @@ class MainActivity : AppCompatActivity() {
 
         adapter.onItemClick = { record -> showAddDialog(record) }
 
+        chartAdapter.onBarTapped = { adapterPos ->
+            val rvPos = chartAdapter.itemCount + adapterPos
+            (binding.recyclerView.layoutManager as LinearLayoutManager)
+                .scrollToPositionWithOffset(rvPos, 0)
+        }
+
         binding.fab.setOnClickListener { showAddDialog() }
 
         binding.fabDeleteAll.setOnClickListener {
@@ -98,6 +104,9 @@ class MainActivity : AppCompatActivity() {
             SettingsActivity.KEY_DISPLAY_UNIT, SettingsActivity.DEFAULT_DISPLAY_UNIT
         ) ?: SettingsActivity.DEFAULT_DISPLAY_UNIT
         adapter.costPerLitre = prefs.getFloat(SettingsActivity.KEY_COST_PER_LITRE, 0f).toDouble()
+        adapter.currencySymbol = prefs.getString(
+            SettingsActivity.KEY_CURRENCY_SYMBOL, SettingsActivity.DEFAULT_CURRENCY_SYMBOL
+        ) ?: SettingsActivity.DEFAULT_CURRENCY_SYMBOL
         updateChart()
     }
 
@@ -263,6 +272,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateChart() {
         val displayUnit = adapter.displayUnit
         val points = mutableListOf<Double>()
+        val recordIndices = mutableListOf<Int>()
         for (i in 0 until latestRecords.size - 1) {
             val record = latestRecords[i]
             val prev = latestRecords[i + 1]
@@ -271,10 +281,17 @@ class MainActivity : AppCompatActivity() {
                 val v = FuelRecordAdapter.computeConsumptionValue(
                     tripMiles, record.fuelAmount, record.fuelUnit, displayUnit
                 )
-                if (v != null && v > 0) points.add(v)
+                if (v != null && v > 0) {
+                    points.add(v)
+                    recordIndices.add(i)
+                }
             }
         }
-        chartAdapter.setData(points.reversed(), FuelRecordAdapter.displayUnitLabel(displayUnit))
+        chartAdapter.setData(
+            points.reversed(),
+            recordIndices.reversed(),
+            FuelRecordAdapter.displayUnitLabel(displayUnit)
+        )
     }
 
     private fun setupSwipeActions() {
@@ -284,6 +301,11 @@ class MainActivity : AppCompatActivity() {
         val helper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
         ) {
+            override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
+                if (viewHolder.absoluteAdapterPosition < chartAdapter.itemCount) return 0
+                return super.getSwipeDirs(recyclerView, viewHolder)
+            }
+
             override fun onMove(
                 rv: RecyclerView,
                 vh: RecyclerView.ViewHolder,
@@ -291,7 +313,7 @@ class MainActivity : AppCompatActivity() {
             ) = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val pos = viewHolder.adapterPosition
+                val pos = viewHolder.bindingAdapterPosition
                 val record = adapter.currentList[pos]
                 when (direction) {
                     ItemTouchHelper.LEFT -> {
@@ -362,9 +384,9 @@ class MainActivity : AppCompatActivity() {
             if (existingRecord.odometerUnit == "KM") {
                 dialogBinding.rgOdometerUnit.check(R.id.rbKm)
                 dialogBinding.tilOdometer.hint = getString(R.string.hint_odometer_km)
-                dialogBinding.etOdometer.setText("%.1f".format(existingRecord.odometerMiles * 1.60934))
+                dialogBinding.etOdometer.setText("%d".format((existingRecord.odometerMiles * 1.60934).toInt()))
             } else {
-                dialogBinding.etOdometer.setText("%.1f".format(existingRecord.odometerMiles))
+                dialogBinding.etOdometer.setText("%d".format(existingRecord.odometerMiles.toInt()))
             }
             dialogBinding.etFuel.setText(existingRecord.fuelAmount.toString())
             dialogBinding.rgUnit.check(
@@ -422,24 +444,48 @@ class MainActivity : AppCompatActivity() {
                     else          -> "LITRES"
                 }
                 val isPartial = dialogBinding.cbMissedFillups.isChecked
-                if (isEdit) {
-                    viewModel.update(existingRecord!!.copy(
-                        odometerMiles = odometerMiles,
-                        odometerUnit = odometerUnit,
-                        fuelAmount = fuel,
-                        fuelUnit = unit,
-                        isPartial = isPartial
-                    ))
+
+                val doSave = {
+                    if (isEdit) {
+                        viewModel.update(existingRecord!!.copy(
+                            odometerMiles = odometerMiles,
+                            odometerUnit = odometerUnit,
+                            fuelAmount = fuel,
+                            fuelUnit = unit,
+                            isPartial = isPartial
+                        ))
+                    } else {
+                        viewModel.insert(FuelRecord(
+                            carId = viewModel.selectedCarId.value ?: 1L,
+                            odometerMiles = odometerMiles,
+                            odometerUnit = odometerUnit,
+                            fuelAmount = fuel,
+                            fuelUnit = unit,
+                            timestampMs = System.currentTimeMillis(),
+                            isPartial = isPartial
+                        ))
+                    }
+                }
+
+                // Odometer sanity check: warn if new reading is below the previous one
+                val prevOdoMiles: Double? = if (!isEdit) {
+                    latestRecords.firstOrNull()?.odometerMiles
                 } else {
-                    viewModel.insert(FuelRecord(
-                        carId = viewModel.selectedCarId.value ?: 1L,
-                        odometerMiles = odometerMiles,
-                        odometerUnit = odometerUnit,
-                        fuelAmount = fuel,
-                        fuelUnit = unit,
-                        timestampMs = System.currentTimeMillis(),
-                        isPartial = isPartial
-                    ))
+                    val idx = latestRecords.indexOfFirst { it.id == existingRecord!!.id }
+                    if (idx >= 0 && idx + 1 < latestRecords.size) latestRecords[idx + 1].odometerMiles else null
+                }
+
+                if (prevOdoMiles != null && odometerMiles < prevOdoMiles) {
+                    val entered = if (isKm) "%d km".format(odoInput.toInt()) else "%d mi".format(odoInput.toInt())
+                    val prev = if (isKm) "%d km".format((prevOdoMiles * 1.60934).toInt()) else "%d mi".format(prevOdoMiles.toInt())
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.warn_odometer_low_title)
+                        .setMessage(getString(R.string.warn_odometer_low_msg, entered, prev))
+                        .setPositiveButton(R.string.warn_save_anyway) { _, _ -> doSave() }
+                        .setNegativeButton(R.string.dialog_cancel, null)
+                        .show()
+                } else {
+                    doSave()
                 }
             }
             .setNegativeButton(R.string.dialog_cancel, null)

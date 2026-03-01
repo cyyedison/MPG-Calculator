@@ -195,6 +195,53 @@
                 android:layout_marginVertical="16dp"
                 android:background="?android:attr/listDivider" />
 
+            <!-- ── Currency symbol ────────────────────────────────── -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/settings_currency_label"
+                android:textAppearance="?attr/textAppearanceSubtitle1" />
+
+            <RadioGroup
+                android:id="@+id/rgCurrencySymbol"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rbCurrencyGbp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/currency_gbp" />
+
+                <RadioButton
+                    android:id="@+id/rbCurrencyUsd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/currency_usd" />
+
+                <RadioButton
+                    android:id="@+id/rbCurrencyEur"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/currency_eur" />
+
+                <RadioButton
+                    android:id="@+id/rbCurrencyNone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/currency_none" />
+
+            </RadioGroup>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="16dp"
+                android:background="?android:attr/listDivider" />
+
             <!-- ── Theme ──────────────────────────────────────────── -->
             <TextView
                 android:layout_width="match_parent"

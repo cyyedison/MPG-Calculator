@@ -8,12 +8,17 @@ import com.example.mpgcalculator.databinding.ItemChartHeaderBinding
 class ChartHeaderAdapter : RecyclerView.Adapter<ChartHeaderAdapter.ViewHolder>() {
 
     private var data: List<Double> = emptyList()
+    private var recordIndices: List<Int> = emptyList()
     private var unitLabel: String = ""
     private var isVisible = false
 
-    fun setData(points: List<Double>, label: String) {
+    /** Called with the adapter position in the fuel records list when a chart point is tapped. */
+    var onBarTapped: ((Int) -> Unit)? = null
+
+    fun setData(points: List<Double>, indices: List<Int>, label: String) {
         val wasVisible = isVisible
         data = points
+        recordIndices = indices
         unitLabel = label
         isVisible = points.size >= 2
         when {
@@ -31,6 +36,10 @@ class ChartHeaderAdapter : RecyclerView.Adapter<ChartHeaderAdapter.ViewHolder>()
         fun bind() {
             binding.chartView.dataPoints = data
             binding.chartView.unitLabel = unitLabel
+            binding.chartView.onPointTapped = { chartIdx ->
+                val adapterPos = recordIndices.getOrNull(chartIdx)
+                if (adapterPos != null) onBarTapped?.invoke(adapterPos)
+            }
         }
     }
 

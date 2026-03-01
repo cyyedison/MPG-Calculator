@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
 import android.util.TypedValue
+import android.view.MotionEvent
 import android.view.View
 
 class ConsumptionChartView @JvmOverloads constructor(
@@ -21,6 +22,12 @@ class ConsumptionChartView @JvmOverloads constructor(
     var unitLabel: String = ""
         set(value) { field = value; invalidate() }
 
+    /** Called with the index of the tapped data point (same index as dataPoints). */
+    var onPointTapped: ((Int) -> Unit)? = null
+
+    // Dot x-positions populated during onDraw, used for hit-testing
+    private val dotXPositions = mutableListOf<Float>()
+
     private val dp = resources.displayMetrics.density
 
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -32,6 +39,8 @@ class ConsumptionChartView @JvmOverloads constructor(
     private val path = Path()
 
     init {
+        isClickable = true
+
         linePaint.style = Paint.Style.STROKE
         linePaint.strokeWidth = 2f * dp
         linePaint.strokeCap = Paint.Cap.ROUND
@@ -69,6 +78,44 @@ class ConsumptionChartView @JvmOverloads constructor(
         axisLabelPaint.alpha = 180
         gridPaint.color = colorOnSurface
         gridPaint.alpha = 30
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                parent.requestDisallowInterceptTouchEvent(true)
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                parent.requestDisallowInterceptTouchEvent(false)
+                if (dotXPositions.isNotEmpty()) {
+                    val touchX = event.x
+                    val nearest = dotXPositions.indices.minByOrNull { kotlin.math.abs(dotXPositions[it] - touchX) }
+                    if (nearest != null) {
+                        val halfSpacing = if (dotXPositions.size > 1) {
+                            kotlin.math.abs(dotXPositions[1] - dotXPositions[0]) / 2f
+                        } else {
+                            48f * dp
+                        }
+                        if (kotlin.math.abs(dotXPositions[nearest] - touchX) <= halfSpacing) {
+                            onPointTapped?.invoke(nearest)
+                            performClick()
+                        }
+                    }
+                }
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                parent.requestDisallowInterceptTouchEvent(false)
+                return true
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -142,8 +189,11 @@ class ConsumptionChartView @JvmOverloads constructor(
 
         // Filled dot at each data point
         val dotR = 4f * dp
+        dotXPositions.clear()
         for (i in 0 until n) {
-            canvas.drawCircle(xOf(i), yOf(dataPoints[i]), dotR, dotPaint)
+            val x = xOf(i)
+            dotXPositions.add(x)
+            canvas.drawCircle(x, yOf(dataPoints[i]), dotR, dotPaint)
         }
     }
 }
