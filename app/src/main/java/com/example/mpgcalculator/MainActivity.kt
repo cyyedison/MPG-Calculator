@@ -48,12 +48,18 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.adapter = adapter
 
         viewModel.records.observe(this) { records ->
+            // Capture size before DiffUtil commits so we can detect an insertion.
+            val previousSize = adapter.currentList.size
             // Use the commit callback to force a full rebind after DiffUtil settles.
             // This is necessary because each card's MPG depends on its *neighbour's*
             // odometer, so a single update affects both the updated card and the one
             // immediately after it in the list.
             adapter.submitList(records) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                // Scroll to top so the newest record (position 0) is visible after an insert.
+                if (records.size > previousSize) {
+                    binding.recyclerView.scrollToPosition(0)
+                }
             }
             binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
         }
