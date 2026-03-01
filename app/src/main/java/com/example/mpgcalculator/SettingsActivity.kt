@@ -32,7 +32,6 @@ class SettingsActivity : AppCompatActivity() {
         setupDisplayUnit()
         setupDefaultOdometerUnit()
         setupDefaultFuelUnit()
-        setupVehicleName()
         setupFuelCost()
         setupTheme()
 
@@ -110,17 +109,6 @@ class SettingsActivity : AppCompatActivity() {
             }
             prefs.edit().putString(KEY_DEFAULT_FUEL_UNIT, newUnit).apply()
         }
-    }
-
-    // ── Vehicle name ──────────────────────────────────────────────────────────
-
-    private fun setupVehicleName() {
-        binding.etVehicleName.setText(prefs.getString(KEY_VEHICLE_NAME, ""))
-        binding.etVehicleName.addTextChangedListener(object : SimpleTextWatcher() {
-            override fun afterTextChanged(s: Editable?) {
-                prefs.edit().putString(KEY_VEHICLE_NAME, s?.toString()?.trim() ?: "").apply()
-            }
-        })
     }
 
     // ── Fuel cost ─────────────────────────────────────────────────────────────

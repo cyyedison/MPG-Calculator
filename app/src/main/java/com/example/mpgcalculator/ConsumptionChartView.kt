@@ -43,10 +43,10 @@ class ConsumptionChartView @JvmOverloads constructor(
         avgLinePaint.strokeWidth = 1.5f * dp
         avgLinePaint.pathEffect = DashPathEffect(floatArrayOf(8f * dp, 4f * dp), 0f)
 
-        axisLabelPaint.textSize = 10f * dp
+        axisLabelPaint.textSize = 17f * dp
         axisLabelPaint.textAlign = Paint.Align.RIGHT
 
-        avgLabelPaint.textSize = 11f * dp
+        avgLabelPaint.textSize = 18f * dp
         avgLabelPaint.textAlign = Paint.Align.CENTER
         avgLabelPaint.isFakeBoldText = true
 
@@ -80,10 +80,11 @@ class ConsumptionChartView @JvmOverloads constructor(
         val avg = dataPoints.average()
 
         // Layout regions (all in pixels)
-        val axisW = 48f * dp
-        val padR = 10f * dp
-        val padT = 26f * dp
-        val padB = 6f * dp
+        // axisW == padR so the plot area is horizontally centred in the view
+        val axisW = 60f * dp
+        val padR = 60f * dp
+        val padT = 28f * dp   // space above the plot for the avg label
+        val padB = 12f * dp
 
         val plotLeft = axisW
         val plotRight = width - padR
@@ -101,11 +102,11 @@ class ConsumptionChartView @JvmOverloads constructor(
         fun yOf(v: Double): Float =
             plotBottom - ((v - dispMin) / (dispMax - dispMin) * plotHeight).toFloat()
 
-        // "Avg: X.X unit" label above the plot area
+        // "Avg: X.X unit" label — above the top grid line, centred on the full view width
         canvas.drawText(
             "Avg: ${"%.1f".format(avg)} $unitLabel",
-            (plotLeft + plotRight) / 2f,
-            padT - 6f * dp,
+            width / 2f,
+            plotTop - 6f * dp,
             avgLabelPaint
         )
 

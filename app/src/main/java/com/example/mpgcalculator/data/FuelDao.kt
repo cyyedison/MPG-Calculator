@@ -9,8 +9,8 @@ import androidx.room.Update
 
 @Dao
 interface FuelDao {
-    @Query("SELECT * FROM fuel_records ORDER BY timestampMs DESC")
-    fun getAll(): LiveData<List<FuelRecord>>
+    @Query("SELECT * FROM fuel_records WHERE carId = :carId ORDER BY timestampMs DESC")
+    fun getForCar(carId: Long): LiveData<List<FuelRecord>>
 
     @Insert
     suspend fun insert(record: FuelRecord)
@@ -21,6 +21,6 @@ interface FuelDao {
     @Delete
     suspend fun delete(record: FuelRecord)
 
-    @Query("DELETE FROM fuel_records")
-    suspend fun deleteAll()
+    @Query("DELETE FROM fuel_records WHERE carId = :carId")
+    suspend fun deleteAllForCar(carId: Long)
 }

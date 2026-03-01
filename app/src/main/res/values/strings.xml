@@ -52,6 +52,16 @@
     <string name="unit_display_kml">Kilometres per litre (km/L)</string>
     <string name="unit_display_l100km">Litres per 100 km (L/100km)</string>
 
+    <!-- Cars -->
+    <string name="cars_title">Cars</string>
+    <string name="cars_add">Add car</string>
+    <string name="cars_rename">Rename car</string>
+    <string name="cars_rename_hint">Car name</string>
+    <string name="cars_delete">Delete car</string>
+    <string name="cars_delete_confirm_title">Delete this car?</string>
+    <string name="cars_delete_confirm_msg">All fill-up records for this car will be permanently removed.</string>
+    <string name="error_cannot_delete_only_car">You must have at least one car</string>
+
     <!-- How to use -->
     <string name="how_to_use_button">How to Use</string>
     <string name="how_to_use_title">How to Use</string>

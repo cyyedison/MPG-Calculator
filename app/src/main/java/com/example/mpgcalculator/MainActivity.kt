@@ -6,10 +6,13 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -18,9 +21,12 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.mpgcalculator.data.Car
 import com.example.mpgcalculator.data.FuelRecord
 import com.example.mpgcalculator.databinding.ActivityMainBinding
 import com.example.mpgcalculator.databinding.DialogAddRecordBinding
+import com.example.mpgcalculator.databinding.DialogManageCarsBinding
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MainActivity : AppCompatActivity() {
@@ -52,21 +58,21 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.records.observe(this) { records ->
             latestRecords = records
-            // Capture size before DiffUtil commits so we can detect an insertion.
             val previousSize = adapter.currentList.size
-            // Use the commit callback to force a full rebind after DiffUtil settles.
-            // This is necessary because each card's MPG depends on its *neighbour's*
-            // odometer, so a single update affects both the updated card and the one
-            // immediately after it in the list.
             adapter.submitList(records) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
-                // Scroll to top so the newest record (position 0) is visible after an insert.
                 if (records.size > previousSize) {
                     binding.recyclerView.scrollToPosition(0)
                 }
             }
             binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
             updateChart()
+        }
+
+        // Update chip strip whenever the car list or selection changes
+        viewModel.cars.observe(this) { cars -> rebuildCarChips(cars) }
+        viewModel.selectedCarId.observe(this) {
+            viewModel.cars.value?.let { rebuildCarChips(it) }
         }
 
         adapter.onItemClick = { record -> showAddDialog(record) }
@@ -92,9 +98,6 @@ class MainActivity : AppCompatActivity() {
             SettingsActivity.KEY_DISPLAY_UNIT, SettingsActivity.DEFAULT_DISPLAY_UNIT
         ) ?: SettingsActivity.DEFAULT_DISPLAY_UNIT
         adapter.costPerLitre = prefs.getFloat(SettingsActivity.KEY_COST_PER_LITRE, 0f).toDouble()
-
-        val vehicleName = prefs.getString(SettingsActivity.KEY_VEHICLE_NAME, "") ?: ""
-        supportActionBar?.subtitle = vehicleName.ifEmpty { null }
         updateChart()
     }
 
@@ -105,12 +108,156 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_cars -> {
+                showAddCarDialog()
+                true
+            }
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    // ── Car chip strip ────────────────────────────────────────────────────────
+
+    private fun rebuildCarChips(cars: List<Car>) {
+        val container = binding.carChipContainer
+        container.removeAllViews()
+        val selectedId = viewModel.selectedCarId.value ?: 1L
+        val chipMargin = (4 * resources.displayMetrics.density).toInt()
+        for (car in cars) {
+            val chip = Chip(this).apply {
+                text = car.name
+                isCheckable = true
+                isChecked = car.id == selectedId
+                // Prevent the chip from toggling its own checked state on click —
+                // we manage selection state explicitly via rebuildCarChips.
+                setOnCheckedChangeListener { chip, checked ->
+                    if (!checked && car.id == selectedId) chip.isChecked = true
+                }
+                setOnClickListener {
+                    if (car.id == selectedId) showRenameCarDialog(car)
+                    else viewModel.selectCar(car.id)
+                }
+                setOnLongClickListener { showRenameCarDialog(car); true }
+            }
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = chipMargin }
+            container.addView(chip, params)
+        }
+    }
+
+    private fun showAddCarDialog() {
+        val defaultName = "Car ${(viewModel.cars.value?.size ?: 0) + 1}"
+        val input = EditText(this).apply {
+            setText(defaultName)
+            selectAll()
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS
+        }
+        val container = android.widget.FrameLayout(this).apply {
+            val p = (20 * resources.displayMetrics.density).toInt()
+            setPadding(p, 0, p, 0)
+            addView(input)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.cars_add)
+            .setView(container)
+            .setPositiveButton(R.string.dialog_add) { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isNotEmpty()) viewModel.insertCar(name)
+            }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
+    }
+
+    private fun showManageCarsDialog() {
+        val dialogBinding = DialogManageCarsBinding.inflate(LayoutInflater.from(this))
+        val carAdapter = CarAdapter(
+            onSelect = { car ->
+                viewModel.selectCar(car.id)
+            },
+            onEdit = { car ->
+                showRenameCarDialog(car)
+            }
+        )
+        carAdapter.selectedCarId = viewModel.selectedCarId.value ?: 1L
+        dialogBinding.rvCars.layoutManager = LinearLayoutManager(this)
+        dialogBinding.rvCars.adapter = carAdapter
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.cars_title)
+            .setView(dialogBinding.root)
+            .setPositiveButton(R.string.dialog_cancel, null)
+            .create()
+
+        // Observe car list while dialog is open
+        val observer = androidx.lifecycle.Observer<List<Car>> { cars ->
+            carAdapter.selectedCarId = viewModel.selectedCarId.value ?: 1L
+            carAdapter.submitList(cars)
+        }
+        viewModel.cars.observe(this, observer)
+        viewModel.selectedCarId.observe(this) { id ->
+            carAdapter.selectedCarId = id
+        }
+
+        dialog.setOnDismissListener {
+            viewModel.cars.removeObserver(observer)
+        }
+
+        dialogBinding.btnAddCar.setOnClickListener {
+            viewModel.addCar()
+        }
+
+        dialog.show()
+    }
+
+    private fun showRenameCarDialog(car: Car) {
+        val cars = viewModel.cars.value ?: emptyList()
+        val canDelete = cars.size > 1
+
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            setText(car.name)
+            selectAll()
+            hint = getString(R.string.cars_rename_hint)
+            setPadding(
+                (20 * resources.displayMetrics.density).toInt(),
+                (12 * resources.displayMetrics.density).toInt(),
+                (20 * resources.displayMetrics.density).toInt(),
+                (4 * resources.displayMetrics.density).toInt()
+            )
+        }
+
+        val builder = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.cars_rename)
+            .setView(input)
+            .setPositiveButton(R.string.dialog_save) { _, _ ->
+                val newName = input.text?.toString()?.trim()
+                if (!newName.isNullOrEmpty()) {
+                    viewModel.renameCar(car, newName)
+                }
+            }
+            .setNegativeButton(R.string.dialog_cancel, null)
+
+        if (canDelete) {
+            builder.setNeutralButton(R.string.cars_delete) { _, _ ->
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.cars_delete_confirm_title)
+                    .setMessage(R.string.cars_delete_confirm_msg)
+                    .setPositiveButton(R.string.dialog_delete) { _, _ ->
+                        viewModel.deleteCar(car)
+                    }
+                    .setNegativeButton(R.string.dialog_cancel, null)
+                    .show()
+            }
+        }
+
+        builder.show()
     }
 
     private fun updateChart() {
@@ -127,7 +274,6 @@ class MainActivity : AppCompatActivity() {
                 if (v != null && v > 0) points.add(v)
             }
         }
-        // Records are DESC (newest first); reverse so the chart shows oldest→newest left→right
         chartAdapter.setData(points.reversed(), FuelRecordAdapter.displayUnitLabel(displayUnit))
     }
 
@@ -149,7 +295,6 @@ class MainActivity : AppCompatActivity() {
                 val record = adapter.currentList[pos]
                 when (direction) {
                     ItemTouchHelper.LEFT -> {
-                        // Restore item visually while awaiting confirmation
                         adapter.notifyItemChanged(pos)
                         MaterialAlertDialogBuilder(this@MainActivity)
                             .setTitle(R.string.dialog_delete_confirm_title)
@@ -173,7 +318,6 @@ class MainActivity : AppCompatActivity() {
             ) {
                 val itemView = viewHolder.itemView
                 if (dX > 0) {
-                    // Swipe right — edit (blue)
                     swipePaint.color = Color.parseColor("#2196F3")
                     c.drawRect(
                         itemView.left.toFloat(), itemView.top.toFloat(),
@@ -186,7 +330,6 @@ class MainActivity : AppCompatActivity() {
                         icon.draw(c)
                     }
                 } else if (dX < 0) {
-                    // Swipe left — delete (red)
                     swipePaint.color = Color.parseColor("#F44336")
                     c.drawRect(
                         itemView.right + dX, itemView.top.toFloat(),
@@ -209,7 +352,6 @@ class MainActivity : AppCompatActivity() {
         val dialogBinding = DialogAddRecordBinding.inflate(LayoutInflater.from(this))
         val prefs = getSharedPreferences(SettingsActivity.PREFS_NAME, MODE_PRIVATE)
 
-        // Wire odometer unit toggle → update hint text
         dialogBinding.rgOdometerUnit.setOnCheckedChangeListener { _, checkedId ->
             dialogBinding.tilOdometer.hint = getString(
                 if (checkedId == R.id.rbKm) R.string.hint_odometer_km else R.string.hint_odometer_miles
@@ -217,11 +359,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (existingRecord != null) {
-            // Editing — restore the exact unit and value the user originally typed
             if (existingRecord.odometerUnit == "KM") {
                 dialogBinding.rgOdometerUnit.check(R.id.rbKm)
                 dialogBinding.tilOdometer.hint = getString(R.string.hint_odometer_km)
-                // miles × 1.60934 = km
                 dialogBinding.etOdometer.setText("%.1f".format(existingRecord.odometerMiles * 1.60934))
             } else {
                 dialogBinding.etOdometer.setText("%.1f".format(existingRecord.odometerMiles))
@@ -236,7 +376,6 @@ class MainActivity : AppCompatActivity() {
             )
             dialogBinding.cbMissedFillups.isChecked = existingRecord.isPartial
         } else {
-            // New record — apply saved defaults
             val defaultOdo = prefs.getString(
                 SettingsActivity.KEY_DEFAULT_ODOMETER_UNIT, SettingsActivity.DEFAULT_ODOMETER_UNIT
             )
@@ -275,7 +414,6 @@ class MainActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
                 val isKm = dialogBinding.rgOdometerUnit.checkedRadioButtonId == R.id.rbKm
-                // 1 mile = 1.60934 km  →  km ÷ 1.60934 = miles
                 val odometerMiles = if (isKm) odoInput / 1.60934 else odoInput
                 val odometerUnit = if (isKm) "KM" else "MILES"
                 val unit = when (dialogBinding.rgUnit.checkedRadioButtonId) {
@@ -294,6 +432,7 @@ class MainActivity : AppCompatActivity() {
                     ))
                 } else {
                     viewModel.insert(FuelRecord(
+                        carId = viewModel.selectedCarId.value ?: 1L,
                         odometerMiles = odometerMiles,
                         odometerUnit = odometerUnit,
                         fuelAmount = fuel,
