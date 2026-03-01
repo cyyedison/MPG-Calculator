@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -27,6 +28,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
     private val adapter = FuelRecordAdapter()
+    private val chartAdapter = ChartHeaderAdapter()
+    private var latestRecords: List<FuelRecord> = emptyList()
 
     private val swipePaint = Paint()
     private var deleteIcon: Drawable? = null
@@ -45,9 +48,10 @@ class MainActivity : AppCompatActivity() {
         editIcon = ContextCompat.getDrawable(this, R.drawable.ic_edit)
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = adapter
+        binding.recyclerView.adapter = ConcatAdapter(chartAdapter, adapter)
 
         viewModel.records.observe(this) { records ->
+            latestRecords = records
             // Capture size before DiffUtil commits so we can detect an insertion.
             val previousSize = adapter.currentList.size
             // Use the commit callback to force a full rebind after DiffUtil settles.
@@ -62,6 +66,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
+            updateChart()
         }
 
         adapter.onItemClick = { record -> showAddDialog(record) }
@@ -90,6 +95,7 @@ class MainActivity : AppCompatActivity() {
 
         val vehicleName = prefs.getString(SettingsActivity.KEY_VEHICLE_NAME, "") ?: ""
         supportActionBar?.subtitle = vehicleName.ifEmpty { null }
+        updateChart()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -105,6 +111,24 @@ class MainActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun updateChart() {
+        val displayUnit = adapter.displayUnit
+        val points = mutableListOf<Double>()
+        for (i in 0 until latestRecords.size - 1) {
+            val record = latestRecords[i]
+            val prev = latestRecords[i + 1]
+            if (!record.isPartial) {
+                val tripMiles = record.odometerMiles - prev.odometerMiles
+                val v = FuelRecordAdapter.computeConsumptionValue(
+                    tripMiles, record.fuelAmount, record.fuelUnit, displayUnit
+                )
+                if (v != null && v > 0) points.add(v)
+            }
+        }
+        // Records are DESC (newest first); reverse so the chart shows oldest→newest left→right
+        chartAdapter.setData(points.reversed(), FuelRecordAdapter.displayUnitLabel(displayUnit))
     }
 
     private fun setupSwipeActions() {

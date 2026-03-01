@@ -29,6 +29,7 @@
     <string name="dialog_delete_all_msg">All fill-up records will be permanently removed. This cannot be undone.</string>
     <string name="dialog_delete">Delete</string>
     <string name="delete_all_records">Delete all records</string>
+    <string name="chart_title">Fuel Economy</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

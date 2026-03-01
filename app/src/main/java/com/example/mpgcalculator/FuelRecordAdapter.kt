@@ -31,6 +31,36 @@ class FuelRecordAdapter : ListAdapter<FuelRecord, FuelRecordAdapter.ViewHolder>(
         }
         private val DATE_FORMAT = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault())
 
+        fun computeConsumptionValue(
+            tripMiles: Double,
+            fuelAmount: Double,
+            fuelUnit: String,
+            displayUnit: String
+        ): Double? {
+            val fuelLitres = when (fuelUnit) {
+                "UK_GAL" -> fuelAmount * 4.54609
+                "US_GAL" -> fuelAmount * 3.78541
+                else     -> fuelAmount
+            }
+            if (fuelLitres <= 0 || tripMiles <= 0) return null
+            val tripKm = tripMiles * 1.60934
+            return when (displayUnit) {
+                "MPG_US" -> tripMiles / fuelLitres * 3.78541
+                "MPL"    -> tripMiles / fuelLitres
+                "KML"    -> tripKm / fuelLitres
+                "L100KM" -> fuelLitres / tripKm * 100
+                else     -> tripMiles / fuelLitres * 4.54609
+            }
+        }
+
+        fun displayUnitLabel(displayUnit: String): String = when (displayUnit) {
+            "MPG_US" -> "MPG (US)"
+            "MPL"    -> "mi/L"
+            "KML"    -> "km/L"
+            "L100KM" -> "L/100km"
+            else     -> "MPG (UK)"
+        }
+
         private fun computeConsumption(
             tripMiles: Double,
             fuelAmount: Double,
