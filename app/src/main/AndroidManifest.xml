@@ -18,6 +18,9 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
         <activity
+            android:name=".TutorialDemoActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name" >

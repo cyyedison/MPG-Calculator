@@ -1,5 +1,6 @@
 package com.example.mpgcalculator
 
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
@@ -37,11 +38,7 @@ class SettingsActivity : AppCompatActivity() {
         setupTheme()
 
         binding.btnHowToUse.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.how_to_use_title)
-                .setMessage(R.string.how_to_use_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
+            startActivity(Intent(this, TutorialDemoActivity::class.java))
         }
     }
 
@@ -230,6 +227,7 @@ class SettingsActivity : AppCompatActivity() {
         const val KEY_COST_PER_LITRE        = "cost_per_litre"
         const val KEY_CURRENCY_SYMBOL       = "currency_symbol"
         const val KEY_THEME                 = "theme"
+        const val KEY_FIRST_LAUNCH          = "first_launch"
 
         const val DEFAULT_DISPLAY_UNIT      = "MPG_UK"
         const val DEFAULT_ODOMETER_UNIT     = "MILES"

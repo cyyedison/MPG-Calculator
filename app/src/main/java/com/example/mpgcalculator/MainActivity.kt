@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private val swipePaint = Paint()
     private var deleteIcon: Drawable? = null
     private var editIcon: Drawable? = null
+    private var tutorialOverlay: TutorialOverlayView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,6 +97,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupSwipeActions()
+
+        // Launch tutorial on first-ever open
+        val prefs = getSharedPreferences(SettingsActivity.PREFS_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(SettingsActivity.KEY_FIRST_LAUNCH, true)) {
+            prefs.edit().putBoolean(SettingsActivity.KEY_FIRST_LAUNCH, false).apply()
+            startActivity(Intent(this, TutorialDemoActivity::class.java))
+        }
     }
 
     override fun onResume() {
@@ -108,6 +117,7 @@ class MainActivity : AppCompatActivity() {
             SettingsActivity.KEY_CURRENCY_SYMBOL, SettingsActivity.DEFAULT_CURRENCY_SYMBOL
         ) ?: SettingsActivity.DEFAULT_CURRENCY_SYMBOL
         updateChart()
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -127,6 +137,75 @@ class MainActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    // ── Tutorial ──────────────────────────────────────────────────────────────
+
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        val overlay = tutorialOverlay
+        if (overlay != null) {
+            (window.decorView as ViewGroup).removeView(overlay)
+            tutorialOverlay = null
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    private fun startTutorial() {
+        val steps = listOf(
+            TutorialStep(
+                title = "Welcome to MPG Calculator",
+                message = "This quick tour shows you how to track your fuel economy. Tap anywhere to go to the next step."
+            ),
+            TutorialStep(
+                title = "Your cars",
+                message = "Switch between your cars here. Tap the selected chip to rename it, or long-press any chip to rename.",
+                getTargetView = { binding.carChipContainer }
+            ),
+            TutorialStep(
+                title = "Log a fill-up",
+                message = "Always fill your tank to the brim, then tap + to record it. Enter your odometer reading and how much fuel you added.",
+                getTargetView = { binding.fab }
+            ),
+            TutorialStep(
+                title = "Fill-up history",
+                message = "Your fill-ups appear here, newest first. Each card shows the date, odometer, trip distance, and fuel economy.",
+                getTargetView = { binding.recyclerView }
+            ),
+            TutorialStep(
+                title = "Edit or delete",
+                message = "Swipe a card right to edit it, or left to delete. You can also tap a card to open the editor.",
+                getTargetView = {
+                    (binding.recyclerView.layoutManager as? LinearLayoutManager)
+                        ?.findViewByPosition(chartAdapter.itemCount)
+                        ?: binding.recyclerView
+                }
+            ),
+            TutorialStep(
+                title = "Fuel economy chart",
+                message = "With 2+ fill-ups, a chart appears here showing your fuel economy trend. Tap a dot to jump to that record in the list.",
+                getTargetView = {
+                    if (chartAdapter.itemCount > 0)
+                        (binding.recyclerView.layoutManager as? LinearLayoutManager)
+                            ?.findViewByPosition(0)
+                    else null
+                },
+                preAction = { binding.recyclerView.scrollToPosition(0) }
+            ),
+            TutorialStep(
+                title = "Settings & cars",
+                message = "Tap the car icon to add a new car. Tap the gear icon to open Settings — change units, set fuel cost, currency symbol, and theme.",
+                getTargetView = { binding.toolbar }
+            )
+        )
+        val overlay = TutorialOverlayView(this, steps)
+        overlay.onDismiss = { tutorialOverlay = null }
+        tutorialOverlay = overlay
+        (window.decorView as ViewGroup).addView(
+            overlay,
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
     }
 
     // ── Car chip strip ────────────────────────────────────────────────────────
