@@ -1,4 +1,4 @@
-package com.example.mpgcalculator.data
+package com.eddiec.mpgcalculator.data
 
 import android.content.Context
 import androidx.room.Database

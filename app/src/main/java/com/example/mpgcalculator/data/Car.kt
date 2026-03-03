@@ -1,4 +1,4 @@
-package com.example.mpgcalculator.data
+package com.eddiec.mpgcalculator.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

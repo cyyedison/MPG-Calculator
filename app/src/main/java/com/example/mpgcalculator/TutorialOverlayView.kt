@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.content.Context
 import android.graphics.Canvas
@@ -11,7 +11,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import com.example.mpgcalculator.databinding.LayoutTutorialBubbleBinding
+import com.eddiec.mpgcalculator.databinding.LayoutTutorialBubbleBinding
 
 class TutorialOverlayView(
     context: Context,
@@ -78,16 +78,25 @@ class TutorialOverlayView(
     }
 
     private fun computeSpotlight(step: TutorialStep) {
-        val target = step.getTargetView?.invoke()
-        if (target != null && target.isShown) {
-            val loc = IntArray(2)
-            target.getLocationOnScreen(loc)
-            spotlightRect.set(
-                loc[0] - spotlightPad,
-                loc[1] - spotlightPad,
-                loc[0] + target.width + spotlightPad,
-                loc[1] + target.height + spotlightPad
-            )
+        val loc = IntArray(2)
+        val targets: List<android.view.View> = when {
+            step.getTargetViews != null -> step.getTargetViews.invoke().filter { it.isShown }
+            step.getTargetView != null  -> listOfNotNull(step.getTargetView.invoke()?.takeIf { it.isShown })
+            else                        -> emptyList()
+        }
+        if (targets.isNotEmpty()) {
+            var left   = Float.MAX_VALUE
+            var top    = Float.MAX_VALUE
+            var right  = -Float.MAX_VALUE
+            var bottom = -Float.MAX_VALUE
+            for (t in targets) {
+                t.getLocationOnScreen(loc)
+                left   = minOf(left,   loc[0].toFloat())
+                top    = minOf(top,    loc[1].toFloat())
+                right  = maxOf(right,  (loc[0] + t.width).toFloat())
+                bottom = maxOf(bottom, (loc[1] + t.height).toFloat())
+            }
+            spotlightRect.set(left - spotlightPad, top - spotlightPad, right + spotlightPad, bottom + spotlightPad)
         } else {
             spotlightRect.setEmpty()
         }

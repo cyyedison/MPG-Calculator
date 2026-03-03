@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.content.Context
 import android.graphics.Canvas

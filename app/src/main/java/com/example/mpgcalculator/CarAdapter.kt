@@ -1,12 +1,12 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.mpgcalculator.data.Car
-import com.example.mpgcalculator.databinding.ItemCarBinding
+import com.eddiec.mpgcalculator.data.Car
+import com.eddiec.mpgcalculator.databinding.ItemCarBinding
 
 class CarAdapter(
     private val onSelect: (Car) -> Unit,

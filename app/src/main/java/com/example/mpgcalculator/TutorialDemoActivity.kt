@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.os.Bundle
 import android.view.Menu
@@ -8,8 +8,8 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.mpgcalculator.data.FuelRecord
-import com.example.mpgcalculator.databinding.ActivityMainBinding
+import com.eddiec.mpgcalculator.data.FuelRecord
+import com.eddiec.mpgcalculator.databinding.ActivityMainBinding
 import com.google.android.material.chip.Chip
 
 class TutorialDemoActivity : AppCompatActivity() {
@@ -53,7 +53,14 @@ class TutorialDemoActivity : AppCompatActivity() {
         }
         chartAdapter.setData(points.reversed(), indices.reversed(), FuelRecordAdapter.displayUnitLabel(displayUnit))
 
-        binding.root.post { startTutorial() }
+        val screenshotMode = intent.getBooleanExtra(EXTRA_SCREENSHOT_MODE, false)
+        if (!screenshotMode) {
+            binding.root.post { startTutorial() }
+        }
+    }
+
+    companion object {
+        const val EXTRA_SCREENSHOT_MODE = "screenshot_mode"
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -123,7 +130,12 @@ class TutorialDemoActivity : AppCompatActivity() {
             TutorialStep(
                 title = "Settings & cars",
                 message = "Tap the car icon to add a new car. Tap the gear icon to open Settings — change units, set fuel cost, currency symbol, and theme.",
-                getTargetView = { binding.toolbar }
+                getTargetViews = {
+                    listOfNotNull(
+                        binding.toolbar.findViewById(R.id.action_cars),
+                        binding.toolbar.findViewById(R.id.action_settings)
+                    )
+                }
             ),
             TutorialStep(
                 title = "You're all set!",

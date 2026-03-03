@@ -1,9 +1,9 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.mpgcalculator.databinding.ItemChartHeaderBinding
+import com.eddiec.mpgcalculator.databinding.ItemChartHeaderBinding
 
 class ChartHeaderAdapter : RecyclerView.Adapter<ChartHeaderAdapter.ViewHolder>() {
 

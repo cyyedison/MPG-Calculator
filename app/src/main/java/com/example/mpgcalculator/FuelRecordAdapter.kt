@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,8 +6,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.mpgcalculator.data.FuelRecord
-import com.example.mpgcalculator.databinding.ItemFuelRecordBinding
+import com.eddiec.mpgcalculator.data.FuelRecord
+import com.eddiec.mpgcalculator.databinding.ItemFuelRecordBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

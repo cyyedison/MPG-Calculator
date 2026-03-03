@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.app.Application
 import android.content.Context
@@ -6,9 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
-import com.example.mpgcalculator.data.Car
-import com.example.mpgcalculator.data.FuelDatabase
-import com.example.mpgcalculator.data.FuelRecord
+import com.eddiec.mpgcalculator.data.Car
+import com.eddiec.mpgcalculator.data.FuelDatabase
+import com.eddiec.mpgcalculator.data.FuelRecord
 import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {

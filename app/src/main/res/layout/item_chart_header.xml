@@ -18,7 +18,7 @@
         android:paddingTop="4dp"
         android:paddingBottom="4dp">
 
-        <com.example.mpgcalculator.ConsumptionChartView
+        <com.eddiec.mpgcalculator.ConsumptionChartView
             android:id="@+id/chartView"
             android:layout_width="match_parent"
             android:layout_height="180dp" />

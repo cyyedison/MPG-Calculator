@@ -1,4 +1,4 @@
-package com.example.mpgcalculator.data
+package com.eddiec.mpgcalculator.data
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao

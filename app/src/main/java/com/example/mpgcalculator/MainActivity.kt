@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.content.Intent
 import android.graphics.Canvas
@@ -22,11 +22,11 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.mpgcalculator.data.Car
-import com.example.mpgcalculator.data.FuelRecord
-import com.example.mpgcalculator.databinding.ActivityMainBinding
-import com.example.mpgcalculator.databinding.DialogAddRecordBinding
-import com.example.mpgcalculator.databinding.DialogManageCarsBinding
+import com.eddiec.mpgcalculator.data.Car
+import com.eddiec.mpgcalculator.data.FuelRecord
+import com.eddiec.mpgcalculator.databinding.ActivityMainBinding
+import com.eddiec.mpgcalculator.databinding.DialogAddRecordBinding
+import com.eddiec.mpgcalculator.databinding.DialogManageCarsBinding
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 

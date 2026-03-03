@@ -1,4 +1,4 @@
-package com.example.mpgcalculator
+package com.eddiec.mpgcalculator
 
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
